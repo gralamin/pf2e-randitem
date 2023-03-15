@@ -1,11 +1,15 @@
+from __future__ import annotations
 import random
 import argparse
 import sys
+import pprint
 
 import db
 
 
-def generate_from_table(db, possible_traits, key, level, is_consumable):
+def generate_from_table(
+    db, possible_traits, key, level, is_consumable
+) -> tuple[str, dict]:
     visited_traits = set()
     found = None
     while found is None:
@@ -23,7 +27,9 @@ def generate_from_table(db, possible_traits, key, level, is_consumable):
     return choosen_trait, found
 
 
-def find_possibility_from_trait(db, choosen_trait, key, level, is_consumable):
+def find_possibility_from_trait(
+    db, choosen_trait, key, level, is_consumable
+) -> list[dict]:
     by_level = [
         x for x in db[key] if x["system"].get("level", {"value": 0})["value"] == level
     ]
@@ -215,7 +221,7 @@ def find_possibility_from_trait(db, choosen_trait, key, level, is_consumable):
         ]
 
 
-def generate_possible_list(all_traits, chance_dict):
+def generate_possible_list(all_traits, chance_dict) -> list[str]:
     l = [
         item
         for sublist in [[key] * value for key, value in chance_dict.items()]
@@ -226,7 +232,7 @@ def generate_possible_list(all_traits, chance_dict):
     return l
 
 
-def permenant_list():
+def permenant_list() -> list[str]:
     # none is [adventuring gear, animals, assistive items, constuomization, trade goods, vehicles]
     # armor is armor and shields
     # Held contains other
@@ -259,7 +265,7 @@ def permenant_list():
     )
 
 
-def consumable_list():
+def consumable_list() -> list[str]:
     return generate_possible_list(
         db.db_used_trait_list,
         {
@@ -310,6 +316,12 @@ def main():
         help="Ignore traits, eg '-i tattoo -i wand' will prevent tattoos and wands from being generated",
         choices=possible_traits,
     )
+    parser.add_argument(
+        "-r",
+        "--report",
+        action="store_true",
+        help="If specified, instead of generating an item, list out effective probabilities of each item, and the trait they are associated with.",
+    )
     args = parser.parse_args()
     level = args.level
     is_consumable = args.consumable
@@ -317,8 +329,13 @@ def main():
     random.seed(seed)
 
     db.load_db(args.custom_db)
-
     key = "consumable" if is_consumable else "permenant"
+
+    if args.report:
+        report = generate_report(key, level, is_consumable, args.trait, args.ignore)
+        pprint.pprint(report)
+        return
+
     if is_consumable:
         trait, choice = generate_consumable(key, level, args.trait, args.ignore)
     else:
@@ -331,7 +348,7 @@ def main():
     print("Seed {}".format(seed))
 
 
-def generate_permenant(key, level, trait=None, ignore=None):
+def generate_permenant(key, level, trait=None, ignore=None) -> tuple[str, dict]:
     ignore = ignore or []
     if trait == None:
         possible_traits = permenant_list()
@@ -343,7 +360,7 @@ def generate_permenant(key, level, trait=None, ignore=None):
     return trait, choice
 
 
-def generate_consumable(key, level, trait=None, ignore=None):
+def generate_consumable(key, level, trait=None, ignore=None) -> tuple[str, dict]:
     ignore = ignore or []
     if trait == None:
         possible_traits = consumable_list()
@@ -353,6 +370,51 @@ def generate_consumable(key, level, trait=None, ignore=None):
     possible_traits = [t for t in possible_traits if t not in ignore]
     trait, choice = generate_from_table(db.db, possible_traits, key, level, True)
     return trait, choice
+
+
+def generate_report(key, level, is_consumable, trait=None, ignore=None) -> dict:
+    ignore = ignore or []
+    if trait == None:
+        possible_traits = permenant_list() if not is_consumable else consumable_list()
+        assert len(possible_traits) == 100
+    else:
+        possible_traits = [trait]
+    possible_traits = [t for t in possible_traits if t not in ignore]
+    possibility_to_trait = {}
+    all_possibilities = set()
+    report = {}
+    for t in possible_traits:
+        # Math is off here
+        # We want to multiply essentially
+        # If there is a 19% chance of selecting this trait
+        # and this trait has 40 items
+        # then this item has a 1/40 * 0.19 = 0.00475 probability
+        items = find_possibility_from_trait(db.db, t, key, level, is_consumable)
+        for x in set(x["name"] for x in items):
+            if x in report and x in all_possibilities:
+                # A previous trait iteration has added this, we want to up the number of iterations this gets.
+                report[x]["i"] += 1
+            else:
+                report[x] = {
+                    "trait": t,
+                    "count": len([y for y in items if y["name"] == x]),
+                    "d": len(items),
+                    "i": 1,
+                    "p": 0,
+                }
+        all_possibilities.update(x["name"] for x in items)
+
+    cleaned_report = {}
+    for x in report.keys():
+        cur_i = report[x]["i"] / len(possible_traits)
+        probability = report[x]["count"] / report[x]["d"] * cur_i
+        report[x]["p"] = probability
+        cleaned_report[x] = {
+            "trait": report[x]["trait"],
+            "p": str(round(probability * 100, 2)) + "%",
+        }
+
+    return cleaned_report
 
 
 if __name__ == "__main__":
