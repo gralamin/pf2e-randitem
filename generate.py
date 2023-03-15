@@ -285,6 +285,7 @@ def consumable_list():
 
 
 def main():
+    possible_traits = sorted(db.db_used_trait_list)
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--level", type=int, required=True)
     parser.add_argument("-c", "--consumable", action="store_true")
@@ -292,7 +293,7 @@ def main():
         "-t",
         "--trait",
         help="Force this trait or type to appear",
-        choices=sorted(db.db_used_trait_list),
+        choices=possible_traits,
     )
     parser.add_argument(
         "-u",
@@ -302,6 +303,13 @@ def main():
         default=None,
     )
     parser.add_argument("-s", "--seed", type=int, default=None)
+    parser.add_argument(
+        "-i",
+        "--ignore",
+        action="append",
+        help="Ignore traits, eg '-i tattoo -i wand' will prevent tattoos and wands from being generated",
+        choices=possible_traits,
+    )
     args = parser.parse_args()
     level = args.level
     is_consumable = args.consumable
@@ -312,9 +320,9 @@ def main():
 
     key = "consumable" if is_consumable else "permenant"
     if is_consumable:
-        trait, choice = generate_consumable(key, level, args.trait)
+        trait, choice = generate_consumable(key, level, args.trait, args.ignore)
     else:
-        trait, choice = generate_permenant(key, level, args.trait)
+        trait, choice = generate_permenant(key, level, args.trait, args.ignore)
 
     if "name" in choice:
         print("{} - trait criteria: {}".format(choice["name"], trait))
@@ -323,22 +331,26 @@ def main():
     print("Seed {}".format(seed))
 
 
-def generate_permenant(key, level, trait=None):
+def generate_permenant(key, level, trait=None, ignore=None):
+    ignore = ignore or []
     if trait == None:
         possible_traits = permenant_list()
         assert len(possible_traits) == 100
     else:
         possible_traits = [trait]
+    possible_traits = [t for t in possible_traits if t not in ignore]
     trait, choice = generate_from_table(db.db, possible_traits, key, level, False)
     return trait, choice
 
 
-def generate_consumable(key, level, trait=None):
+def generate_consumable(key, level, trait=None, ignore=None):
+    ignore = ignore or []
     if trait == None:
         possible_traits = consumable_list()
         assert len(possible_traits) == 100
     else:
         possible_traits = [trait]
+    possible_traits = [t for t in possible_traits if t not in ignore]
     trait, choice = generate_from_table(db.db, possible_traits, key, level, True)
     return trait, choice
 
