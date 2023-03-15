@@ -292,7 +292,7 @@ def main():
         "-t",
         "--trait",
         help="Force this trait or type to appear",
-        choices=db.db_used_trait_list,
+        choices=sorted(db.db_used_trait_list),
     )
     parser.add_argument(
         "-u",
