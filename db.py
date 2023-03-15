@@ -32,6 +32,7 @@ def load_db_folder(path):
         for name in dirs:
             load_db_folder(os.path.join(path, name))
 
+
 def load_db(custom_db):
     load_db_folder(path)
     if custom_db:

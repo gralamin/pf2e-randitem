@@ -1,0 +1,19 @@
+{
+    "name": "Resilient Glen Test",
+    "system": {
+        "level": {
+            "value": 8
+        },
+        "traits": {
+            "rarity": "common",
+            "value": [
+                "abjuration",
+                "magical"
+            ]
+        },
+        "usage": {
+            "value": "etched-onto-armor"
+        }
+    },
+    "type": "equipment"
+}

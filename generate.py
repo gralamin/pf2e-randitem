@@ -298,7 +298,7 @@ def main():
         "-u",
         "--custom-db",
         type=str,
-        help="Custom db path to load (unimplemented)",
+        help="Custom db path to load",
         default=None,
     )
     parser.add_argument("-s", "--seed", type=int, default=None)
