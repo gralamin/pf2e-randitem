@@ -380,9 +380,9 @@ def generate_report(key, level, is_consumable, trait=None, ignore=None) -> dict:
     else:
         possible_traits = [trait]
     possible_traits = [t for t in possible_traits if t not in ignore]
-    possibility_to_trait = {}
     all_possibilities = set()
     report = {}
+    total_i = 0
     for t in possible_traits:
         # Math is off here
         # We want to multiply essentially
@@ -390,6 +390,9 @@ def generate_report(key, level, is_consumable, trait=None, ignore=None) -> dict:
         # and this trait has 40 items
         # then this item has a 1/40 * 0.19 = 0.00475 probability
         items = find_possibility_from_trait(db.db, t, key, level, is_consumable)
+        if not items:
+            continue
+        total_i += 1
         for x in set(x["name"] for x in items):
             if x in report and x in all_possibilities:
                 # A previous trait iteration has added this, we want to up the number of iterations this gets.
@@ -405,14 +408,19 @@ def generate_report(key, level, is_consumable, trait=None, ignore=None) -> dict:
         all_possibilities.update(x["name"] for x in items)
 
     cleaned_report = {}
+    total_p = 0
     for x in report.keys():
-        cur_i = report[x]["i"] / len(possible_traits)
+        # The category percent chance
+        cur_i = report[x]["i"] / total_i
         probability = report[x]["count"] / report[x]["d"] * cur_i
         report[x]["p"] = probability
         cleaned_report[x] = {
             "trait": report[x]["trait"],
             "p": str(round(probability * 100, 2)) + "%",
         }
+        total_p += probability
+    assert round(total_p, 2) == 1, total_p
+
 
     return cleaned_report
 
