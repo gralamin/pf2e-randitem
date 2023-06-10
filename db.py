@@ -2,7 +2,7 @@ import os
 import json
 
 __curdir__ = os.path.dirname(os.path.realpath(__file__))
-path = os.path.join(__curdir__, "pf2e/packs/data/equipment.db/")
+path = os.path.join(__curdir__, "pf2e/packs/equipment/")
 
 db = {"consumable": [], "permenant": []}
 all_traits = set()
