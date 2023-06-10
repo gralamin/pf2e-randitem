@@ -419,7 +419,7 @@ def generate_report(key, level, is_consumable, trait=None, ignore=None) -> dict:
             "p": str(round(probability * 100, 2)) + "%",
         }
         total_p += probability
-    assert round(total_p, 2) == 1, total_p
+    assert round(total_p, 8) == 1, total_p
 
 
     return cleaned_report

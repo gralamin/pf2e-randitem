@@ -126,6 +126,24 @@ class TestIntegration(unittest.TestCase):
                     print("Adding {}".format(sorted(new_items)))
                 seen_items.update(new_items)
 
+    def test_generate_report_premenant(self):
+        key = "permenant"
+        for level in range(0, max_level):
+            report = generate.generate_report(key, level, False)
+            if report:
+                total = sum(float(x["p"][:-1]) for x in report.values())
+                self.assertTrue(total < 100.9995, "{} - {}%".format(level, total))
+                self.assertTrue(total > 99.0005, "{} - {}%".format(level, total))
+
+    def test_generate_report_consumable(self):
+        key = "consumable"
+        for level in range(0, max_level):
+            report = generate.generate_report(key, level, True)
+            if report:
+                total = sum(float(x["p"][:-1]) for x in report.values())
+                self.assertTrue(total < 100.9995, "{} - {}%".format(level, total))
+                self.assertTrue(total > 99.0005, "{} - {}%".format(level, total))
+
 
 if __name__ == "__main__":
     unittest.main()
